@@ -1,7 +1,5 @@
-# views/references_view.py
-
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, 
-                             QTableWidgetItem, QPushButton, QLabel, QLineEdit, 
+                             QTableWidgetItem, QPushButton, QLabel, QLineEdit, QAbstractItemView,
                              QComboBox, QFormLayout, QHeaderView, QGroupBox, QSplitter)
 
 class ReferencesView(QWidget):
@@ -21,7 +19,7 @@ class ReferencesView(QWidget):
         self.cat_table.setColumnCount(3)
         self.cat_table.setHorizontalHeaderLabels(["ID", "Category Name", "Status"])
         self.cat_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.cat_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.cat_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         cat_layout.addWidget(QLabel("<b>Manage Categories</b>"))
         cat_layout.addWidget(self.cat_table)
 
@@ -55,7 +53,7 @@ class ReferencesView(QWidget):
         self.sup_table.setColumnCount(4)
         self.sup_table.setHorizontalHeaderLabels(["ID", "Supplier Name", "Contact", "Address"])
         self.sup_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.sup_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.sup_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         sup_layout.addWidget(QLabel("<b>Manage Suppliers</b>"))
         sup_layout.addWidget(self.sup_table)
 
