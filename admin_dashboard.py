@@ -1,39 +1,23 @@
-# d:\PythonProjects\GroceryStoreInventoryPOS\admin_dashboard.py
-import sys
-from pathlib import Path
-
-from PyQt6.QtCore import QProcess
-from PyQt6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QHBoxLayout,
-    QVBoxLayout,
-    QPushButton,
-    QStackedWidget,
-    QFrame,
-    QLabel,
-    QMessageBox,
+﻿from PyQt6.QtWidgets import (
+    QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton,
+    QStackedWidget, QFrame, QLabel
 )
+from PyQt6.QtCore import Qt
 
 from styles import APP_STYLE
 from database.db_manager import DatabaseManager
-from auth.operator_context import AdminContext
+from auth.context import AdminContext
 
 from views.product_view import ProductView
 from controllers.product_controller import ProductController
-
 from views.references_view import ReferencesView
 from controllers.references_controller import ReferencesController
-
 from views.inventory_view import InventoryView
 from controllers.inventory_controller import InventoryController
-
 from views.reports_view import ReportsView
 from controllers.reports_controller import ReportsController
-
 from views.users_view import UsersView
 from controllers.users_controller import UsersController
-
 from views.registers_view import RegistersView
 from controllers.registers_controller import RegistersController
 
@@ -41,61 +25,89 @@ from controllers.registers_controller import RegistersController
 class Dashboard(QMainWindow):
     def __init__(self, db: DatabaseManager, operator: AdminContext):
         super().__init__()
-        self.setWindowTitle("Retail Admin Dashboard")
-        self.resize(1280, 800)
+        self.setWindowTitle("Retail POS - Admin Dashboard")
+        self.resize(1366, 768)
         self.setStyleSheet(APP_STYLE)
 
         self.db = db
         self.operator = operator
 
         if not self.db.is_admin_active(self.operator.admin_account_id):
-            raise SystemExit(
-                f"Admin account {self.operator.admin_account_id} is inactive. Cannot start admin dashboard."
-            )
+            raise SystemExit(f"Admin ID {self.operator.admin_account_id} is inactive. Access Denied.")
 
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        main_layout = QHBoxLayout(central_widget)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
+        central = QWidget()
+        self.setCentralWidget(central)
 
+        root = QHBoxLayout(central)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        # --------------------
+        # Dark, Industrial Sidebar
+        # --------------------
         sidebar = QFrame()
-        sidebar.setObjectName("sidebar")
+        sidebar.setObjectName("Sidebar")
         sidebar.setFixedWidth(260)
-        sidebar_layout = QVBoxLayout(sidebar)
-        sidebar_layout.setContentsMargins(0, 20, 0, 12)
-        sidebar_layout.setSpacing(0)
 
-        title = QLabel(" Retail Admin\n Dashboard")
-        sidebar_layout.addWidget(title)
-        sidebar_layout.addSpacing(20)
+        sb_layout = QVBoxLayout(sidebar)
+        sb_layout.setContentsMargins(0, 20, 0, 0)
+        sb_layout.setSpacing(0)
 
-        self.btn_nav_products = self.create_nav_button("Product Management")
-        self.btn_nav_inventory = self.create_nav_button("Inventory Management")
-        self.btn_nav_refs = self.create_nav_button("Categories and Suppliers")
-        self.btn_nav_reports = self.create_nav_button("Sales Reports")
-        self.btn_nav_users = self.create_nav_button("User Management")
-        self.btn_nav_registers = self.create_nav_button("Register Management")
+        # Branding / User Info block
+        brand_box = QVBoxLayout()
+        brand_box.setContentsMargins(20, 0, 20, 20)
+        brand_box.setSpacing(4)
+        
+        lbl_brand = QLabel("ADMIN DASHBOARD")
+        lbl_brand.setObjectName("SidebarTitle")
+        
+        lbl_user = QLabel(f"OP ID: {self.operator.admin_account_id}")
+        lbl_user.setObjectName("SidebarMeta")
 
-        sidebar_layout.addWidget(self.btn_nav_products)
-        sidebar_layout.addWidget(self.btn_nav_inventory)
-        sidebar_layout.addWidget(self.btn_nav_refs)
-        sidebar_layout.addWidget(self.btn_nav_reports)
-        sidebar_layout.addWidget(self.btn_nav_users)
-        sidebar_layout.addWidget(self.btn_nav_registers)
+        brand_box.addWidget(lbl_brand)
+        brand_box.addWidget(lbl_user)
+        sb_layout.addLayout(brand_box)
 
-        sidebar_layout.addSpacing(18)
-        sidebar_layout.addWidget(QLabel(" Tools"))
-        sidebar_layout.addSpacing(8)
+        # Navigation
+        self.btn_nav_products = self.create_nav_button("CATALOG")
+        self.btn_nav_inventory = self.create_nav_button("INVENTORY")
+        self.btn_nav_refs = self.create_nav_button("REFERENCES")
+        self.btn_nav_registers = self.create_nav_button("REGISTERS")
+        self.btn_nav_users = self.create_nav_button("USERS")
+        self.btn_nav_reports = self.create_nav_button("REPORTS")
 
-        self.btn_launch_pos = self.create_nav_button("Open Cashier POS")
-        self.btn_launch_pos.setCheckable(False)
-        sidebar_layout.addWidget(self.btn_launch_pos)
+        self._nav_buttons = [
+            self.btn_nav_products,
+            self.btn_nav_inventory,
+            self.btn_nav_refs,
+            self.btn_nav_registers,
+            self.btn_nav_users,
+            self.btn_nav_reports,
+        ]
 
-        sidebar_layout.addStretch()
+        for b in self._nav_buttons:
+            sb_layout.addWidget(b)
+
+        sb_layout.addStretch()
+
+        # --------------------
+        # Main Content Area
+        # --------------------
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(20, 20, 20, 20)
+        content_layout.setSpacing(15)
+
+        self.lbl_page_title = QLabel("")
+        self.lbl_page_title.setObjectName("Header")
+        content_layout.addWidget(self.lbl_page_title)
 
         self.stacked_widget = QStackedWidget()
+        content_layout.addWidget(self.stacked_widget)
 
+        # --------------------
+        # Pages + Controllers
+        # --------------------
         self.product_view = ProductView()
         self.product_controller = ProductController(self.product_view, self.db, self.operator)
 
@@ -121,57 +133,66 @@ class Dashboard(QMainWindow):
         self.stacked_widget.addWidget(self.usr_view)      # 4
         self.stacked_widget.addWidget(self.reg_view)      # 5
 
-        main_layout.addWidget(sidebar)
-        main_layout.addWidget(self.stacked_widget)
+        root.addWidget(sidebar)
+        root.addWidget(content)
 
-        self.btn_nav_products.clicked.connect(lambda: self.switch_tab(0, self.btn_nav_products))
-        self.btn_nav_inventory.clicked.connect(lambda: self.switch_tab(1, self.btn_nav_inventory))
-        self.btn_nav_refs.clicked.connect(lambda: self.switch_tab(2, self.btn_nav_refs))
-        self.btn_nav_reports.clicked.connect(lambda: self.switch_tab(3, self.btn_nav_reports))
-        self.btn_nav_users.clicked.connect(lambda: self.switch_tab(4, self.btn_nav_users))
-        self.btn_nav_registers.clicked.connect(lambda: self.switch_tab(5, self.btn_nav_registers))
+        # --------------------
+        # Navigation Wiring
+        # --------------------
+        self.btn_nav_products.clicked.connect(lambda: self.switch_tab(0, self.btn_nav_products, "PRODUCT CATALOG"))
+        self.btn_nav_inventory.clicked.connect(lambda: self.switch_tab(1, self.btn_nav_inventory, "INVENTORY MANAGEMENT"))
+        self.btn_nav_refs.clicked.connect(lambda: self.switch_tab(2, self.btn_nav_refs, "CATEGORIES & SUPPLIERS"))
+        self.btn_nav_registers.clicked.connect(lambda: self.switch_tab(5, self.btn_nav_registers, "REGISTER TERMINALS"))
+        self.btn_nav_users.clicked.connect(lambda: self.switch_tab(4, self.btn_nav_users, "USER MANAGEMENT"))
+        self.btn_nav_reports.clicked.connect(lambda: self.switch_tab(3, self.btn_nav_reports, "FINANCIAL REPORTS"))
 
         self.btn_nav_products.clicked.connect(self.product_controller.load_dropdowns)
         self.btn_nav_products.clicked.connect(self.product_controller.load_table_data)
         self.btn_nav_inventory.clicked.connect(self.inv_controller.load_data)
         self.btn_nav_refs.clicked.connect(self.refs_controller.load_data)
-        self.btn_nav_reports.clicked.connect(self.rep_controller.load_data)
-        self.btn_nav_users.clicked.connect(self.usr_controller.load_data)
         self.btn_nav_registers.clicked.connect(self.reg_controller.load_data)
+        self.btn_nav_users.clicked.connect(self.usr_controller.load_data)
+        self.btn_nav_reports.clicked.connect(self.rep_controller.load_data)
 
-        self.btn_launch_pos.clicked.connect(self.launch_cashier_pos)
-
-        self.switch_tab(0, self.btn_nav_products)
+        # Initialize to first tab
+        self.switch_tab(0, self.btn_nav_products, "PRODUCT CATALOG")
+        self.btn_nav_products.setFocus()
 
     def create_nav_button(self, text: str) -> QPushButton:
         btn = QPushButton(text)
+        btn.setObjectName("NavButton")
         btn.setCheckable(True)
+        btn.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         return btn
 
-    def switch_tab(self, index: int, active_btn: QPushButton) -> None:
+    def switch_tab(self, index: int, active_btn: QPushButton, title: str) -> None:
         self.stacked_widget.setCurrentIndex(index)
-        for btn in [
-            self.btn_nav_products,
-            self.btn_nav_inventory,
-            self.btn_nav_refs,
-            self.btn_nav_reports,
-            self.btn_nav_users,
-            self.btn_nav_registers,
-        ]:
+        self.lbl_page_title.setText(title)
+
+        for btn in self._nav_buttons:
             btn.setChecked(False)
         active_btn.setChecked(True)
 
-    def launch_cashier_pos(self) -> None:
-        script_path = Path(__file__).resolve().parent / "cashier_main.py"
-        if not script_path.exists():
-            QMessageBox.critical(self, "Launch Error", f"cashier_main.py was not found at:\n{script_path}")
-            return
+    def keyPressEvent(self, event) -> None:
+        key = event.key()
+        fw = self.focusWidget()
 
-        started = QProcess.startDetached(sys.executable, [str(script_path)])
-        if not started:
-            QMessageBox.critical(
-                self,
-                "Launch Error",
-                "Cashier POS did not start.\n\n"
-                f"Python: {sys.executable}\nScript: {script_path}"
-            )
+        if fw in self._nav_buttons:
+            idx = self._nav_buttons.index(fw)
+
+            if key == Qt.Key.Key_Down:
+                self._nav_buttons[(idx + 1) % len(self._nav_buttons)].setFocus()
+                event.accept()
+                return
+
+            if key == Qt.Key.Key_Up:
+                self._nav_buttons[(idx - 1) % len(self._nav_buttons)].setFocus()
+                event.accept()
+                return
+
+            if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                fw.click()
+                event.accept()
+                return
+
+        super().keyPressEvent(event)
